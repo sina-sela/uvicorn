@@ -261,7 +261,9 @@ class Server:
 
     async def shutdown(self, sockets: list[socket.socket] | None = None) -> None:
         logger.info("Shutting down")
-
+                # Send the lifespan shutdown event, and wait for application shutdown.
+        if not self.force_exit:
+            await self.lifespan.shutdown()
         # Stop accepting new connections.
         for server in self.servers:
             server.close()
@@ -286,10 +288,6 @@ class Server:
             )
             for t in self.server_state.tasks:
                 t.cancel(msg="Task cancelled, timeout graceful shutdown exceeded")
-
-        # Send the lifespan shutdown event, and wait for application shutdown.
-        if not self.force_exit:
-            await self.lifespan.shutdown()
 
     async def _wait_tasks_to_complete(self) -> None:
         # Wait for existing connections to finish sending responses.
